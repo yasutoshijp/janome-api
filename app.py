@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from janome.tokenizer import Tokenizer
 import json
+import os
 
 app = Flask(__name__)
 tokenizer = Tokenizer()
@@ -21,4 +22,5 @@ def analyze():
     return json.dumps(result, ensure_ascii=False)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
