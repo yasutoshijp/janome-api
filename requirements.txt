@@ -1,0 +1,3 @@
+flask
+janome
+gunicorn
