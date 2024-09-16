@@ -1,0 +1,6 @@
+services:
+  - name: janome-api
+    healthcheck:
+      path: /
+      port: 8080
+      
