@@ -1,0 +1,135 @@
+# Janome API Multi Architecture
+
+このプロジェクトは日本語形態素解析ライブラリJanomeをDockerコンテナ化し、マルチアーキテクチャ（ARM/x86）に対応させたAPIです。
+
+## 必要条件
+
+- Docker
+- Docker Buildx (マルチアーキテクチャビルド用)
+
+## ビルド方法
+
+ARM向けにビルドする場合：
+```bash
+docker buildx build --platform linux/arm/v7 -t janome-api-multi-archi .
+```
+
+マルチアーキテクチャ向けにビルドする場合：
+```bash
+docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64 -t janome-api-multi-archi .
+```
+
+## 使用方法
+
+コンテナの起動：
+```bash
+docker run -p 8080:8080 janome-api-multi-archi
+```
+
+## APIエンドポイント
+
+- エンドポイントの説明をここに記載
+- 利用可能なAPIメソッドの一覧
+- リクエスト/レスポンスの例
+
+## ライセンス
+
+このプロジェクトのライセンスを記載
+
+
+★★以下最初のメモ
+
+# GCEへのJanome APIデプロイ手順書
+
+## 1. GitHubからのコード取得とDockerイメージ作成
+
+### 1.1 コードのクローン
+```bash
+# Windowsローカル環境での作業
+git clone https://github.com/yasutoshijp/janome-api.git
+cd janome-api
+1.2 Dockerイメージのビルド
+bash
+コードをコピーする
+docker build -t yasutoshijpprivate/janome-api:v2 .
+1.3 Docker Hubへのプッシュ
+bash
+コードをコピーする
+docker login
+docker push yasutoshijpprivate/janome-api:v2
+2. GCEインスタンスの準備
+2.1 GCPプロジェクトの設定
+bash
+コードをコピーする
+gcloud config set project [プロジェクトID]  # 例：dulcet-post-105108
+2.2 Compute Engine APIの有効化
+GCPコンソールで有効化
+
+2.3 SSHでGCEインスタンスに接続
+bash
+コードをコピーする
+gcloud compute ssh yasutoshijp-docker --zone us-central1-a
+3. GCEインスタンスでのDocker設定とコンテナ起動
+3.1 Dockerのインストール（必要な場合）
+
+sudo apt-get update
+sudo apt-get install -y docker.io
+3.2 Docker Hubからイメージをプル
+
+sudo docker pull yasutoshijpprivate/janome-api:v2
+3.3 コンテナの起動
+bash
+コードをコピーする
+sudo docker run -d \
+  -p 8080:8080 \
+  --name janome-api \
+  yasutoshijpprivate/janome-api:v2 \
+  gunicorn --bind 0.0.0.0:8080 app:app
+3.4 コンテナの状態確認
+bash
+コードをコピーする
+sudo docker ps
+sudo docker logs janome-api
+4. ファイアウォール設定
+GCPコンソールで「VPCネットワーク」→「ファイアウォール」を選択
+「ファイアウォールルールを作成」をクリック
+以下の設定を入力：
+
+名前: allow-janome-api
+説明: Allow incoming traffic for Janome API
+ネットワーク: default
+優先度: 1000
+トラフィックの方向: 上り（内向き）
+アクション: 許可
+ターゲット: 指定されたターゲットタグ
+ターゲットタグ: janome-api
+ソースフィルタ: IP範囲
+ソースIPの範囲: 0.0.0.0/0
+プロトコルとポート: TCP:8080
+
+5. 動作確認
+5.1 ローカル（GCEインスタンス内）での確認
+curl "http://localhost:8080/api/analyze?text=私は元気です"
+5.2 外部からの確認（WindowsのPowerShellなど）
+bash
+コードをコピーする
+curl "http://[GCEインスタンスの外部IP]:8080/api/analyze?text=私は元気です"
+注意事項
+インスタンスを再起動すると外部IPアドレスが変更される可能性があります。
+静的IPアドレスの設定が必要な場合は別途設定が必要です。
+コンテナ再起動が必要な場合：
+
+bash
+コードをコピーする
+sudo docker restart janome-api
+# または
+sudo docker rm -f janome-api  # 削除して
+# 上記3.3の手順で再度起動
+トラブルシューティング
+問題が発生した場合の確認項目：
+
+コンテナの状態: sudo docker ps -a
+コンテナのログ: sudo docker logs janome-api
+ファイアウォールルールの設定
+インスタンスのネットワークタグ
+ポート8080の待ち受け状態: sudo netstat -tulpn | grep 8080
